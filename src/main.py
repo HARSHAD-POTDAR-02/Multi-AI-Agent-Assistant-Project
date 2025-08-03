@@ -1,21 +1,27 @@
-from graph_setup import build_graph
+from supervisor import AgentSupervisor
+import time
 
 def main():
     """
     The main entry point for the application.
     """
-    graph = build_graph()
+    supervisor = AgentSupervisor()
 
-    print("Welcome to your Multi-AI Agent Personal Assistant!")
-    print("How can I help you today?")
+    print("🚀 Welcome to your Multi-AI Agent Personal Assistant! 🚀")
+    print("BuddyAI: How can I help you today?")
 
-    while True:
-        user_query = input("> ")
-        if user_query.lower() == "exit":
-            break
+    try:
+        while True:
+            supervisor.task_complete_event.wait() # Wait for the previous task to complete
+            user_query = input("User: ")
+            if user_query.lower() == "exit":
+                break
+            supervisor.add_task(user_query)
 
-        response = graph.invoke({"user_query": user_query})
-        print(response["response"])
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    finally:
+        supervisor.stop()
 
 if __name__ == "__main__":
     main()

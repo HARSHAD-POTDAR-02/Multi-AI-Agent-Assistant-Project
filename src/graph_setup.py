@@ -1,5 +1,4 @@
 from langgraph.graph import StateGraph, END
-from agents.router import route_request
 from agents.task_manager import manage_tasks
 from agents.prioritization_engine import prioritize_tasks
 from agents.calendar_orchestrator import orchestrate_calendar
@@ -11,16 +10,6 @@ from agents.analytics_dashboard import show_analytics
 from state import GraphState
 
 
-def router_node(state):
-    """
-    The main router node.
-    """
-    print("---ROUTER---")
-    user_query = state["user_query"]
-    routed_agent = route_request(user_query)
-    return {"routed_agent": routed_agent}
-
-
 def build_graph():
     """
     Builds the graph.
@@ -28,7 +17,6 @@ def build_graph():
     workflow = StateGraph(GraphState)
 
     # Add the nodes
-    workflow.add_node("router", router_node)
     workflow.add_node("task_manager", manage_tasks)
     workflow.add_node("prioritization_engine", prioritize_tasks)
     workflow.add_node("calendar_orchestrator", orchestrate_calendar)
@@ -38,12 +26,8 @@ def build_graph():
     workflow.add_node("sub_agents", handle_sub_agents)
     workflow.add_node("analytics_dashboard", show_analytics)
 
-    # Set the entry point
-    workflow.set_entry_point("router")
-
-    # Add the conditional edges
-    workflow.add_conditional_edges(
-        "router",
+    # Set the entry point to be conditional on the 'routed_agent'
+    workflow.set_conditional_entry_point(
         lambda x: x["routed_agent"],
         {
             "task_manager": "task_manager",
