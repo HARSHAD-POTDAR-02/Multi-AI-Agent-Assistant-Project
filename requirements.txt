@@ -30,3 +30,4 @@ pytz>=2023.3
 
 # For diagram generation (if using diagram_generator.py)
 graphviz>=0.20.1
+pygraphviz>=1.12
