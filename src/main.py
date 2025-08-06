@@ -7,7 +7,7 @@ def main():
     """
     supervisor = AgentSupervisor()
 
-    print("🚀 Welcome to your Multi-AI Agent Personal Assistant! 🚀")
+    print("[ROCKET] Welcome to your Multi-AI Agent Personal Assistant! [ROCKET]")
     print("BuddyAI: How can I help you today?")
 
     try:
