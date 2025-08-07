@@ -31,3 +31,12 @@ pytz>=2023.3
 # For diagram generation (if using diagram_generator.py)
 graphviz>=0.20.1
 pygraphviz>=1.12
+
+# Enhanced Task Manager Dependencies
+# Note: sqlite3 is built into Python, no need to install
+# pathlib is built into Python 3.4+
+# uuid is built into Python
+# json is built into Python
+# threading is built into Python
+# collections is built into Python
+# enum is built into Python (3.4+)
