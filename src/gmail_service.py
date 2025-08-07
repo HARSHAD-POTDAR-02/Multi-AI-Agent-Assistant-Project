@@ -14,20 +14,25 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.compose', 'https://www.googleap
 
 def get_gmail_service():
     """Get Gmail API service"""
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    credentials_path = os.path.join(script_dir, 'credentials.json')
+    token_path = os.path.join(script_dir, 'token.json')
+    
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            if not os.path.exists('credentials.json'):
+            if not os.path.exists(credentials_path):
                 return None, "Please add credentials.json file from Google Cloud Console"
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
         
-        with open('token.json', 'w') as token:
+        with open(token_path, 'w') as token:
             token.write(creds.to_json())
     
     service = build('gmail', 'v1', credentials=creds)
