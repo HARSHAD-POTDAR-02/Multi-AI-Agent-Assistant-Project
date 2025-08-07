@@ -141,6 +141,10 @@ class AgentSupervisor:
                 task_id = task_metadata.get('id')
                 if task_id and hasattr(self, 'task_manager'):
                     self.task_manager.update_task_status(task_id, 'in_progress')
+                    # Save the updated task to database
+                    task = self.task_manager.get_task(task_id)
+                    if task:
+                        self.task_manager.save_to_database(task)
 
                 # Try to assign the agent, with a maximum number of retries
                 agent_is_busy = True
@@ -163,6 +167,10 @@ class AgentSupervisor:
                     print(f"  - ❌ Agent '{routed_agent}' is still busy after {max_retries} attempts. Skipping task.")
                     if task_id and hasattr(self, 'task_manager'):
                         self.task_manager.update_task_status(task_id, 'blocked')
+                        # Save the updated task to database
+                        task = self.task_manager.get_task(task_id)
+                        if task:
+                            self.task_manager.save_to_database(task)
                     continue
 
                 print(f"  - 🟢 Agent '{routed_agent}' is now **busy**.")
@@ -181,6 +189,10 @@ class AgentSupervisor:
                     if task_id and hasattr(self, 'task_manager'):
                         self.task_manager.update_task_status(task_id, 'completed')
                         self.task_manager.update_task_progress(task_id, 100)
+                        # Save the updated task to database
+                        task = self.task_manager.get_task(task_id)
+                        if task:
+                            self.task_manager.save_to_database(task)
                 finally:
                     with self.lock:
                         self.agents[routed_agent] = "idle"
@@ -243,7 +255,7 @@ class AgentSupervisor:
                                 "completed": "✅",
                                 "blocked": "🚫",
                                 "assigned": "📌"
-                            }.get(subtask.status, "⏳")
+                            }.get(subtask.status.value if hasattr(subtask.status, 'value') else subtask.status, "⏳")
                             subtasks.append(f"\n   - {subtask_status} {subtask.title}")
                     if subtasks:
                         result += "\n   Subtasks:" + "".join(subtasks)

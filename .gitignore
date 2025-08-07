@@ -146,3 +146,34 @@ dmypy.json
 cython_debug/
 
 /venv-langgraph/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Test files
+test_*.py
+tests/
+pytest_cache/
+.pytest_cache/
+
+# Database files
+*.db
+
+# Environment variables
+.env
