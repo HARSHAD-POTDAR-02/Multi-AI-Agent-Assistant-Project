@@ -246,11 +246,32 @@ class TaskManager:
     def get_task(self, task_id: str) -> Optional[Task]:
         """Get task by ID with validation"""
         if not task_id:
+            logger.error("Task ID cannot be empty")
+            return None
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute('SELECT data FROM tasks WHERE id = ?', (task_id,))
+                row = cursor.fetchone()
+                if row:
+                    return Task.from_dict(json.loads(row[0]))
+                return None
+        except sqlite3.Error as e:
+            logger.error(f"Database read error: {e}")
+            return None
+    
     def delete_task(self, task_id: str):
         """Delete a task from the database"""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-            conn.commit()
+        if not task_id:
+            logger.error("Task ID cannot be empty")
+            return
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+                conn.commit()
+                logger.info(f"Task deleted: {task_id}")
+        except sqlite3.Error as e:
+            logger.error(f"Database delete error: {e}")
+            raise
     
     def backup_database(self, backup_path: str):
         """Create a backup of the database"""

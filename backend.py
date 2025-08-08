@@ -7,8 +7,8 @@ import os
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.supervisor import AgentSupervisor
-from src.agents.router import route_request
+from supervisor import AgentSupervisor
+from agents.router import route_request
 
 app = FastAPI(title="Simi.ai API", version="1.0.0")
 
