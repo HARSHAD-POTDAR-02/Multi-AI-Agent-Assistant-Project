@@ -66,6 +66,7 @@ def main():
                 
             # Handle analytics command
             elif user_query.lower() == "analytics":
+
                 analytics = supervisor.task_manager.get_task_analytics_summary()
                 result = "📊 Task Analytics Summary:\n"
                 result += f"\n📋 Total Tasks: {analytics['total_tasks']}"

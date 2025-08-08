@@ -31,9 +31,9 @@ def route_request(user_query: str) -> str:
     Read the descriptions of each agent carefully and decide which one is the best fit.
 
     - **task_manager**:
-        - **What it does**: Manages tasks, creates to-do lists, and tracks progress.
-        - **When to call it**: Call this agent for any requests related to creating, viewing, updating, or deleting tasks. For example: "add 'buy milk' to my to-do list", "show me my tasks for today", "mark 'finish report' as complete".
-        - **When NOT to call it**: Do not call this agent if the user wants to prioritize their tasks; use `prioritization_engine` for that. Do not call it for scheduling events on a calendar; use `calendar_orchestrator` for that.
+        - **What it does**: Manages existing tasks - viewing, updating, deleting, and tracking progress.
+        - **When to call it**: Call this agent for requests about existing tasks. For example: "show me my tasks for today", "mark 'finish report' as complete", "delete the grocery shopping task".
+        - **When NOT to call it**: Do not call this agent for creating new todo lists or breaking down complex goals; use `sub_agents` for that. Do not call it for prioritization; use `prioritization_engine`.
 
     - **prioritization_engine**:
         - **What it does**: Prioritizes tasks and suggests what to work on next based on importance and urgency.
@@ -61,9 +61,9 @@ def route_request(user_query: str) -> str:
         - **When NOT to call it**: Do not call this agent for scheduling complex events or meetings in the calendar; use `calendar_orchestrator` for that.
 
     - **sub_agents**:
-        - **What it does**: Handles complex, multi-step tasks related to meetings and projects by breaking them down and coordinating other agents.
-        - **When to call it**: Call this agent for complex requests that require multiple actions. For example: "organize the project launch meeting" (which might involve finding a time, booking a room, sending invites, and creating an agenda), or "plan my new project" (which could involve creating tasks, setting deadlines, and scheduling milestones).
-        - **When NOT to call it**: Do not call this agent for simple, single-step requests that can be handled by a more specialized agent.
+        - **What it does**: Creates intelligent todo lists, breaks down complex goals into actionable tasks, and coordinates multi-step projects.
+        - **When to call it**: Call this agent for creating new todo lists or breaking down complex requests. For example: "create a todo list for planning my vacation", "make a todo list for organizing my home office", "break down 'launch new product' into tasks", "organize the project launch meeting".
+        - **When NOT to call it**: Do not call this agent for managing existing tasks; use `task_manager` for that.
 
     - **analytics_dashboard**:
         - **What it does**: Provides analytics and feedback on the user's productivity and work patterns.

@@ -4,7 +4,8 @@ import os
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-from graph_setup import build_graph
+from src.graph_setup import build_graph
+from src.state import GraphState
 
 def main():
     """

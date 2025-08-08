@@ -910,7 +910,7 @@ class TaskManager:
         """
         try:
             # Extract add_to_queue parameter before creating the Task object
-            add_to_queue = kwargs.pop('add_to_queue', True) if 'add_to_queue' in kwargs else True
+            add_to_queue = kwargs.pop('add_to_queue', True)
             
             task = Task(title, **kwargs)
             self.tasks[task.id] = task

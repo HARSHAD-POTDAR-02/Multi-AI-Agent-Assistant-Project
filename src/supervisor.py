@@ -61,7 +61,14 @@ class AgentSupervisor:
         print(f"🔍 Breaking down complex goal: '{complex_goal}'")
         tasks = self.task_manager.break_down_task(complex_goal)
         
-        if tasks and len(tasks) > 0 and tasks[0] is not None:
+        # Check if tasks is None or empty
+        if not tasks:
+            print("❌ Failed to break down the complex goal - no tasks returned")
+            self._create_fallback_task(complex_goal)
+            return
+            
+        # Check if we have a valid parent task
+        if len(tasks) > 0 and tasks[0] is not None:
             parent_task = tasks[0]
             print(f"📋 Created parent task: '{parent_task.title}' with {len(tasks)-1} subtasks")
             
@@ -81,25 +88,33 @@ class AgentSupervisor:
                 
                 print(f"  - Subtask '{subtask.title}' assigned to agent '{agent}'")
         else:
-            print("❌ Failed to break down the complex goal")
-            # Create a simple task as fallback
-            task = self.task_manager.create_task(
-                title=complex_goal,
-                description="Complex goal that couldn't be broken down",
-                status="pending"
-            )
+            print("❌ Failed to break down the complex goal - invalid parent task")
+            self._create_fallback_task(complex_goal)
+    
+    def _create_fallback_task(self, complex_goal):
+        """Create a simple task as fallback when complex goal breakdown fails"""
+        # Create a simple task as fallback
+        task = self.task_manager.create_task(
+            title=complex_goal,
+            description="Complex goal that couldn't be broken down",
+            status="pending"
+        )
+        
+        if task:
+            # Determine the best agent for this task
+            agent = self._determine_agent_for_subtask(complex_goal)
+            self.task_manager.assign_agent(task.id, agent)
             
-            if task:
-                # Determine the best agent for this task
-                agent = self._determine_agent_for_subtask(complex_goal)
-                self.task_manager.assign_agent(task.id, agent)
-                
-                # Add the task to the queue
-                task_data = task.to_dict()
-                task_data['query'] = complex_goal
-                task_data['type'] = 'task'
-                self.add_task(task_data)
-            
+            # Add the task to the queue
+            task_data = task.to_dict()
+            task_data['query'] = complex_goal
+            task_data['type'] = 'task'
+            self.add_task(task_data)
+        else:
+            print("❌ Failed to create fallback task")
+            # Last resort: add the raw query to the queue
+            self.add_task(complex_goal)
+
     def _determine_agent_for_subtask(self, subtask_title):
         """
         Determine the best agent for a subtask based on its title/description
