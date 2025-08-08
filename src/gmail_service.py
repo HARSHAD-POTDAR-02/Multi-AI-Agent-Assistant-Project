@@ -16,8 +16,8 @@ def get_gmail_service():
     """Get Gmail API service"""
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    token_path = os.path.join(script_dir, 'token.json')
     credentials_path = os.path.join(script_dir, 'credentials.json')
+    token_path = os.path.join(script_dir, 'token.json')
     
     creds = None
     if os.path.exists(token_path):

@@ -28,9 +28,11 @@ sphinx-rtd-theme>=1.2.0
 python-dateutil>=2.8.2
 pytz>=2023.3
 
-# Google API Auth
-google-auth>=2.30.0
-google-auth-oauthlib>=1.2.0
+# Google Calendar API
+google-auth>=2.17.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.88.0
 
 # For diagram generation (if using diagram_generator.py)
 graphviz>=0.20.1
