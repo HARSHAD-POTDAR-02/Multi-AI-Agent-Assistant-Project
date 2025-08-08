@@ -7,8 +7,8 @@ import os
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from supervisor import AgentSupervisor
 from agents.router import route_request
+from graph_setup import build_graph
 
 app = FastAPI(title="Simi.ai API", version="1.0.0")
 
@@ -21,16 +21,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global supervisor instance
-supervisor = None
+# Global graph instance
+graph = None
 
 class QueryRequest(BaseModel):
     query: str
 
-def init_supervisor():
-    global supervisor
-    if supervisor is None:
-        supervisor = AgentSupervisor()
+def init_graph():
+    global graph
+    if graph is None:
+        graph = build_graph()
 
 @app.post("/process")
 async def process_request(request: QueryRequest):
@@ -44,8 +44,8 @@ async def process_request(request: QueryRequest):
         os.chdir(src_dir)
         
         try:
-            # Initialize supervisor if needed
-            init_supervisor()
+            # Initialize graph if needed
+            init_graph()
             
             # Route the request
             routed_agent = route_request(request.query)
@@ -59,7 +59,7 @@ async def process_request(request: QueryRequest):
             }
             
             # Process through the graph
-            response = supervisor.graph.invoke(state)
+            response = graph.invoke(state)
         finally:
             # Always restore original directory
             os.chdir(original_cwd)

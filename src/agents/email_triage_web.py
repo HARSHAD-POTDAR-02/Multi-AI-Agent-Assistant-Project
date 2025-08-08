@@ -82,17 +82,10 @@ def draft_and_send_email_web(user_request, conversation_history=None, context=No
             if msg_match:
                 body = msg_match.group(1).strip()
         
-        # Store draft in context for potential regeneration
-        context = context or {}
-        context['draft_email'] = {
-            'to': to_email,
-            'subject': subject,
-            'body': body,
-            'original_request': user_request
-        }
+        # Send email directly for web interface
+        result = send_email(service, to_email, subject, body)
         
-        # Show draft for confirmation
-        response = f"""📧 Email Draft Ready:
+        response = f"""✅ Email sent successfully!
 
 TO: {to_email}
 SUBJECT: {subject}
@@ -100,9 +93,9 @@ SUBJECT: {subject}
 BODY:
 {body}
 
-Type 'send' to confirm, 'regenerate' to create new content, or 'cancel' to abort."""
+{result}"""
         
-        return {"response": response, "context": context}
+        return {"response": response}
         
     except Exception as e:
         return {"response": f"Error processing email: {str(e)}"}
