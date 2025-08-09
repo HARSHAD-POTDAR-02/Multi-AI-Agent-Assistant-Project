@@ -1,0 +1,17 @@
+{
+  "goals": {
+    "ea0592a1-ff25-496e-bfcc-3097cf6bb866": {
+      "id": "ea0592a1-ff25-496e-bfcc-3097cf6bb866",
+      "title": "Launch mobile app",
+      "description": "",
+      "type": "personal",
+      "target_date": null,
+      "progress": 0.0,
+      "linked_tasks": [],
+      "created_at": "2025-08-09T14:32:38.422409+00:00",
+      "is_active": true,
+      "milestones": []
+    }
+  },
+  "smart_goals": {}
+}

@@ -1,14 +1,55 @@
 from langgraph.graph import StateGraph, END
-from agents.task_manager import manage_tasks
-from agents.prioritization_engine import prioritize_tasks
-from agents.calendar_orchestrator import orchestrate_calendar
-from agents.email_triage_web import triage_emails
-from agents.focus_support import support_focus
-from agents.smart_reminders import send_reminders
-from agents.sub_agents import handle_sub_agents
-from agents.analytics_dashboard import show_analytics
-from agents.general_chat import general_chat
 from state import GraphState
+
+# Import agents with error handling
+try:
+    from agents.task_manager import manage_tasks
+except ImportError as e:
+    print(f"Warning: Could not import task_manager: {e}")
+    def manage_tasks(state): return {"response": "Task manager not available"}
+
+try:
+    from agents.prioritization import prioritization_agent
+except ImportError as e:
+    print(f"Warning: Could not import prioritization: {e}")
+    def prioritization_agent(state): return {"response": "Prioritization not available"}
+
+try:
+    from agents.general_chat import general_chat
+except ImportError as e:
+    print(f"Warning: Could not import general_chat: {e}")
+    def general_chat(state): return {"response": "Hello! I'm having some technical difficulties."}
+
+# Import other agents with fallbacks
+try:
+    from agents.calendar_orchestrator import orchestrate_calendar
+except ImportError:
+    def orchestrate_calendar(state): return {"response": "Calendar not available"}
+
+try:
+    from agents.email_triage_web import triage_emails
+except ImportError:
+    def triage_emails(state): return {"response": "Email not available"}
+
+try:
+    from agents.focus_support import support_focus
+except ImportError:
+    def support_focus(state): return {"response": "Focus support not available"}
+
+try:
+    from agents.smart_reminders import send_reminders
+except ImportError:
+    def send_reminders(state): return {"response": "Reminders not available"}
+
+try:
+    from agents.sub_agents import handle_sub_agents
+except ImportError:
+    def handle_sub_agents(state): return {"response": "Sub agents not available"}
+
+try:
+    from agents.analytics_dashboard import show_analytics
+except ImportError:
+    def show_analytics(state): return {"response": "Analytics not available"}
 
 
 def build_graph():
@@ -19,7 +60,7 @@ def build_graph():
 
     # Add the nodes
     workflow.add_node("task_manager", manage_tasks)
-    workflow.add_node("prioritization_engine", prioritize_tasks)
+    workflow.add_node("prioritization", prioritization_agent)
     workflow.add_node("calendar_orchestrator", orchestrate_calendar)
     workflow.add_node("email_triage", triage_emails)
     workflow.add_node("focus_support", support_focus)
@@ -33,7 +74,7 @@ def build_graph():
         lambda x: x["routed_agent"],
         {
             "task_manager": "task_manager",
-            "prioritization_engine": "prioritization_engine",
+            "prioritization": "prioritization",
             "calendar_orchestrator": "calendar_orchestrator",
             "email_triage": "email_triage",
             "focus_support": "focus_support",
@@ -46,7 +87,7 @@ def build_graph():
 
     # Add the end points
     workflow.add_edge("task_manager", END)
-    workflow.add_edge("prioritization_engine", END)
+    workflow.add_edge("prioritization", END)
     workflow.add_edge("calendar_orchestrator", END)
     workflow.add_edge("email_triage", END)
     workflow.add_edge("focus_support", END)

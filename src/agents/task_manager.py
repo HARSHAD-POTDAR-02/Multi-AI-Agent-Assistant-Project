@@ -2,10 +2,12 @@ import logging
 import sqlite3
 import uuid
 import json
+import threading
+import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from enum import Enum
-from collections import defaultdict
+from collections import defaultdict, deque
 from threading import Lock
 import os
 from pathlib import Path
@@ -95,8 +97,21 @@ class Task:
         self.dynamic_priority_score = self._calculate_dynamic_priority()
 
     def _calculate_dynamic_priority(self) -> float:
-        """Calculate a dynamic priority score based on multiple factors"""
+        """Enhanced dynamic priority calculation with multi-factor scoring"""
         try:
+            # Import here to avoid circular imports
+            from agents.prioritization.scoring_engine import PriorityScorer
+            from agents.prioritization.models import UserPreferences
+            
+            scorer = PriorityScorer()
+            user_prefs = UserPreferences()
+            
+            # Use the advanced scoring engine
+            priority_score = scorer.calculate_priority(self, user_prefs, [], [])
+            return priority_score.score
+            
+        except ImportError:
+            # Fallback to original calculation if prioritization module not available
             priority_val = self.priority.value if hasattr(self.priority, 'value') else self.priority
             if isinstance(priority_val, str):
                 priority_map = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
@@ -153,11 +168,77 @@ class Task:
             'time_entries': self.time_entries,
             'dynamic_priority_score': self.dynamic_priority_score
         }
+    
+    def is_overdue(self) -> bool:
+        """Check if task is overdue"""
+        if not self.due_date:
+            return False
+        return datetime.now(timezone.utc) > self.due_date
+    
+    def add_notification(self, message: str, level: str = "info"):
+        """Add a notification to the task"""
+        notification = {
+            'message': message,
+            'level': level,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        self.notifications.append(notification)
+    
+    def _calculate_next_occurrence(self) -> Optional[datetime]:
+        """Calculate next occurrence for recurring tasks"""
+        if self.recurrence_type == RecurrenceType.NONE:
+            return None
+        
+        base_date = self.due_date or self.created_at
+        
+        if self.recurrence_type == RecurrenceType.DAILY:
+            return base_date + timedelta(days=self.recurrence_interval)
+        elif self.recurrence_type == RecurrenceType.WEEKLY:
+            return base_date + timedelta(weeks=self.recurrence_interval)
+        elif self.recurrence_type == RecurrenceType.MONTHLY:
+            return base_date + timedelta(days=30 * self.recurrence_interval)
+        elif self.recurrence_type == RecurrenceType.YEARLY:
+            return base_date + timedelta(days=365 * self.recurrence_interval)
+        
+        return None
+    
+    def create_recurring_instance(self):
+        """Create a new instance of a recurring task"""
+        if self.recurrence_type == RecurrenceType.NONE:
+            return None
+        
+        new_task = Task(
+            title=self.title,
+            description=self.description,
+            priority=self.priority,
+            assigned_agent=self.assigned_agent,
+            dependencies=self.dependencies.copy(),
+            estimated_hours=self.estimated_hours,
+            tags=self.tags.copy(),
+            recurrence_type=self.recurrence_type,
+            recurrence_interval=self.recurrence_interval,
+            completion_criteria=self.completion_criteria.copy()
+        )
+        
+        # Set new due date if original had one
+        if self.due_date:
+            new_task.due_date = self._calculate_next_occurrence()
+        
+        return new_task
+    
+    def update_dynamic_priority(self):
+        """Update the dynamic priority score"""
+        self.dynamic_priority_score = self._calculate_dynamic_priority()
+        self.modification_count += 1
 
 class TaskManager:
     def __init__(self, db_path: str = "tasks.db"):
         self.db_path = self._sanitize_path(db_path)
-        self.tasks = {}
+        # Use shared storage
+        from shared_storage import get_shared_tasks, set_shared_tasks
+        self.tasks = get_shared_tasks()
+        # Ensure tasks are synced
+        set_shared_tasks(self.tasks)
         self.lock = Lock()
         self._init_database()
         
@@ -208,11 +289,15 @@ class TaskManager:
                              'recurrence_interval', 'completion_criteria']
                 
                 for key, value in kwargs.items():
-                    if key in valid_keys:
+                    if key in valid_keys and value is not None:
                         valid_params[key] = value
                 
                 task = Task(title=title.strip(), **valid_params)
                 self.tasks[task.id] = task
+                # Also update shared storage
+                from shared_storage import add_shared_task, set_shared_tasks
+                add_shared_task(task.id, task)
+                set_shared_tasks(self.tasks)
                 self._save_task(task)
                 logger.info(f"Task created: {task.id}")
                 return task.id
@@ -400,319 +485,9 @@ class TaskAnalytics:
             
         return {'dates': dates, 'remaining': remaining_tasks}
 
-class TaskManager:
-    """Enhanced Task Manager with advanced features"""
+# Remove duplicate TaskManager class - using the first one
     
-    def __init__(self, supervisor=None):
-        self.tasks: Dict[str, Task] = {}
-        self.supervisor = supervisor
-        self.db_manager = DatabaseManager()
-        self.analytics = TaskAnalytics(self)
-        self._lock = threading.Lock()
-        
-        # Load existing tasks from database
-        self._load_tasks_from_db()
-        
-        # Task templates
-        self.task_templates = {}
-        
-        # Notification system
-        self.notification_queue = deque()
-        
-        # Start background processes
-        self._start_background_processes()
-    
-    def _load_tasks_from_db(self):
-        """Load all tasks from the database on startup"""
-        try:
-            self.tasks = self.db_manager.load_all_tasks()
-            print(f"Loaded {len(self.tasks)} tasks from database")
-        except Exception as e:
-            print(f"Error loading tasks from database: {e}")
-            self.tasks = {}
-    
-    def _start_background_processes(self):
-        """Start background threads for maintenance tasks"""
-        # Start notification checker
-        notification_thread = threading.Thread(target=self._notification_checker, daemon=True)
-        notification_thread.start()
-        
-        # Start recurring task scheduler
-        scheduler_thread = threading.Thread(target=self._recurring_task_scheduler, daemon=True)
-        scheduler_thread.start()
-        
-        # Start priority updater
-        priority_thread = threading.Thread(target=self._priority_updater, daemon=True)
-        priority_thread.start()
-    
-    def _notification_checker(self):
-        """Background process to check for notifications"""
-        while True:
-            try:
-                self._check_deadline_notifications()
-                self._check_stuck_tasks()
-                time.sleep(300)  # Check every 5 minutes
-            except Exception as e:
-                print(f"Error in notification checker: {e}")
-                time.sleep(60)
-    
-    def _recurring_task_scheduler(self):
-        """Background process to handle recurring tasks"""
-        while True:
-            try:
-                self._process_recurring_tasks()
-                time.sleep(3600)  # Check every hour
-            except Exception as e:
-                print(f"Error in recurring task scheduler: {e}")
-                time.sleep(300)
-    
-    def _priority_updater(self):
-        """Background process to update dynamic priorities"""
-        while True:
-            try:
-                self._update_all_priorities()
-                time.sleep(1800)  # Update every 30 minutes
-            except Exception as e:
-                print(f"Error in priority updater: {e}")
-                time.sleep(300)
-    
-    def _check_deadline_notifications(self):
-        """Check for approaching deadlines and create notifications"""
-        now = datetime.now(timezone.utc)
-        
-        for task in self.tasks.values():
-            if not task.due_date or task.status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
-                continue
-                
-            days_until_due = (task.due_date - now).days
-            
-            # Create notifications for different time thresholds
-            if days_until_due < 0:  # Overdue
-                task.add_notification(
-                    f"Task '{task.title}' is {abs(days_until_due)} days overdue!",
-                    "error"
-                )
-            elif days_until_due == 0:  # Due today
-                task.add_notification(
-                    f"Task '{task.title}' is due today!",
-                    "warning"
-                )
-            elif days_until_due == 1:  # Due tomorrow
-                task.add_notification(
-                    f"Task '{task.title}' is due tomorrow",
-                    "info"
-                )
-    
-    def _check_stuck_tasks(self):
-        """Check for tasks that haven't been updated in a while"""
-        now = datetime.now(timezone.utc)
-        stuck_threshold = timedelta(days=3)
-        
-        for task in self.tasks.values():
-            if (task.status == TaskStatus.IN_PROGRESS and 
-                now - task.updated_at > stuck_threshold):
-                task.add_notification(
-                    f"Task '{task.title}' has been in progress for {(now - task.updated_at).days} days without updates",
-                    "warning"
-                )
-    
-    def _process_recurring_tasks(self):
-        """Process recurring tasks and create new instances if needed"""
-        now = datetime.now(timezone.utc)
-        
-        for task in list(self.tasks.values()):
-            if (task.recurrence_type != RecurrenceType.NONE and 
-                task.status == TaskStatus.COMPLETED and
-                task.next_occurrence and
-                now >= task.next_occurrence):
-                
-                # Create new recurring instance
-                new_task = task.create_recurring_instance()
-                if new_task:
-                    self.tasks[new_task.id] = new_task
-                    self.db_manager.save_task(new_task)
-                    
-                    # Update the original task's next occurrence
-                    task.next_occurrence = task._calculate_next_occurrence()
-                    self.db_manager.save_task(task)
-    
-    def _update_all_priorities(self):
-        """Update dynamic priorities for all tasks"""
-        with self._lock:
-            for task in self.tasks.values():
-                if task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
-                    task.update_dynamic_priority()
-                    # Save to database periodically
-                    if task.modification_count % 5 == 0:  # Save every 5 modifications
-                        self.db_manager.save_task(task)
-        
-    def create_task(self, title: str, **kwargs) -> Optional[Task]:
-        """
-        Create a new task and add it to the supervisor's queue if available
-        
-        Args:
-            title: The title of the task
-            **kwargs: Additional task attributes
-            
-        Returns:
-            The created task if successful, None otherwise
-        """
-        try:
-            # Extract add_to_queue parameter before creating the Task object
-            add_to_queue = kwargs.pop('add_to_queue', True)
-            
-            task = Task(title, **kwargs)
-            self.tasks[task.id] = task
-            
-            # If this is a subtask, add it to the parent's subtasks list
-            if task.parent_id and task.parent_id in self.tasks:
-                self.tasks[task.parent_id].subtasks.append(task.id)
-                
-            # Only add to supervisor queue if explicitly requested and not a subtask
-            if self.supervisor is not None and add_to_queue and not task.parent_id:
-                task_data = {
-                    'id': task.id,
-                    'query': task.title,
-                    'description': task.description,
-                    'priority': task.priority,
-                    'parent_id': task.parent_id,
-                    'dependencies': task.dependencies,
-                    'status': task.status,
-                    'type': 'task'  # Explicitly mark as a task type
-                }
-                self.supervisor.add_task(task_data)
-                
-            return task
-            
-        except Exception as e:
-            print(f"Error creating task: {e}")
-            return None
-            
-        with self.lock:
-            return self.tasks.get(task_id)
-    
-    def update_task(self, task_id: str, updates: Dict[str, Any]) -> bool:
-        """Update task with validation"""
-        if not task_id or not updates:
-            return False
-            
-        try:
-            with self.lock:
-                task = self.tasks.get(task_id)
-                if not task:
-                    return False
-                
-                # Validate and sanitize updates
-                for key, value in updates.items():
-                    if hasattr(task, key):
-                        if key in ['title', 'description'] and isinstance(value, str):
-                            setattr(task, key, html.escape(value))
-                        else:
-                            setattr(task, key, value)
-                
-                task.updated_at = datetime.now(timezone.utc)
-                self._save_task(task)
-                return True
-        except Exception as e:
-            logger.error(f"Error updating task {task_id}: {e}")
-            return False
-    
-    def delete_task(self, task_id: str) -> bool:
-        """Delete task with proper error handling"""
-        if not task_id:
-            return False
-            
-        try:
-            with self.lock:
-                if task_id in self.tasks:
-                    del self.tasks[task_id]
-                    
-                with sqlite3.connect(self.db_path) as conn:
-                    conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-                    conn.commit()
-                    
-                logger.info(f"Task deleted: {task_id}")
-                return True
-        except sqlite3.Error as e:
-            logger.error(f"Error deleting task {task_id}: {e}")
-            return False
 
-    def break_down_task(self, complex_goal: str) -> List[Task]:
-        """Break down a complex goal into subtasks"""
-        try:
-            # Simple task breakdown for demo
-            main_task = Task(title=complex_goal, description=f"Main task: {complex_goal}")
-            self.tasks[main_task.id] = main_task
-            self._save_task(main_task)
-            
-            # Create some example subtasks
-            subtasks = [
-                Task(title=f"Research for {complex_goal}", description="Gather information"),
-                Task(title=f"Create outline for {complex_goal}", description="Structure the content"),
-                Task(title=f"Develop content for {complex_goal}", description="Create the actual content")
-            ]
-            
-            for subtask in subtasks:
-                subtask.parent_id = main_task.id
-                main_task.subtasks.append(subtask.id)
-                self.tasks[subtask.id] = subtask
-                self._save_task(subtask)
-            
-            return [main_task] + subtasks
-        except Exception as e:
-            logger.error(f"Error breaking down task: {e}")
-            return []
-    
-    def assign_agent(self, task_id: str, agent_name: str) -> bool:
-        """Assign an agent to a task"""
-        try:
-            task = self.get_task(task_id)
-            if task:
-                task.assigned_agent = agent_name
-                self._save_task(task)
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"Error assigning agent to task {task_id}: {e}")
-            return False
-    
-    def update_task_status(self, task_id: str, status: str) -> bool:
-        """Update task status"""
-        try:
-            task = self.get_task(task_id)
-            if task:
-                if hasattr(TaskStatus, status.upper()):
-                    task.status = TaskStatus(status)
-                    task.updated_at = datetime.now(timezone.utc)
-                    self._save_task(task)
-                    return True
-            return False
-        except Exception as e:
-            logger.error(f"Error updating task status {task_id}: {e}")
-            return False
-    
-    def update_task_progress(self, task_id: str, progress: int) -> bool:
-        """Update task progress"""
-        try:
-            task = self.get_task(task_id)
-            if task:
-                task.progress = max(0, min(100, progress))
-                task.updated_at = datetime.now(timezone.utc)
-                self._save_task(task)
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"Error updating task progress {task_id}: {e}")
-            return False
-    
-    def save_to_database(self, task: Task) -> bool:
-        """Save task to database (alias for _save_task)"""
-        try:
-            self._save_task(task)
-            return True
-        except Exception as e:
-            logger.error(f"Error saving task to database: {e}")
-            return False
     
     def list_tasks(self, status: str = None, parent_id: str = None) -> List[Dict[str, Any]]:
         """List tasks with optional filtering"""
@@ -733,6 +508,28 @@ class TaskManager:
         except Exception as e:
             logger.error(f"Error listing tasks: {e}")
             return []
+    
+    def get_prioritized_tasks(self, limit: int = 10) -> List[Task]:
+        """Get tasks sorted by priority score (highest first)"""
+        try:
+            # Get active tasks only
+            active_tasks = [t for t in self.tasks.values() 
+                          if t.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]]
+            
+            # Update priorities for all tasks
+            for task in active_tasks:
+                task.dynamic_priority_score = task._calculate_dynamic_priority()
+            
+            # Sort by priority score (highest first)
+            prioritized = sorted(active_tasks, 
+                               key=lambda t: t.dynamic_priority_score, 
+                               reverse=True)
+            
+            return prioritized[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error getting prioritized tasks: {e}")
+            return []
 
 def manage_tasks(state):
     """Main function for task management agent"""
@@ -751,15 +548,20 @@ def manage_tasks(state):
         # Simple task creation for demo
         if "create" in user_query.lower() or "add" in user_query.lower():
             # Extract task title from query (simplified)
-            title = user_query.replace("create", "").replace("add", "").strip()
+            title = user_query.replace("create task:", "").replace("add task:", "").replace("create", "").replace("add", "").strip()
+            
+            # Remove common prefixes
+            if title.startswith("task:"):
+                title = title[5:].strip()
+            
             if title:
                 task_id = task_manager.create_task(title)
                 if task_id:
-                    return {"response": f"Task Manager: Created task '{title}' with ID: {task_id}"}
+                    return {"response": f"Task created: '{title}' (ID: {task_id})"}
                 else:
-                    return {"response": "Task Manager: Failed to create task"}
+                    return {"response": "Failed to create task. Please try again."}
             else:
-                return {"response": "Task Manager: Please provide a task title"}
+                return {"response": "Please provide a task title. Example: 'Create task: Finish report'"}
         
         return {"response": f"Task Manager: I have received your request to: {user_query}"}
         

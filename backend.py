@@ -30,13 +30,23 @@ class QueryRequest(BaseModel):
 def init_graph():
     global graph
     if graph is None:
-        graph = build_graph()
+        try:
+            print("Building graph...")
+            graph = build_graph()
+            print("Graph built successfully")
+        except Exception as e:
+            print(f"Error building graph: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
 @app.post("/process")
 async def process_request(request: QueryRequest):
     try:
         if not request.query.strip():
             raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        print(f"Processing query: {request.query}")
         
         # Change to src directory for Gmail credentials
         original_cwd = os.getcwd()
@@ -45,10 +55,13 @@ async def process_request(request: QueryRequest):
         
         try:
             # Initialize graph if needed
+            print("Initializing graph...")
             init_graph()
             
             # Route the request
+            print("Routing request...")
             routed_agent = route_request(request.query)
+            print(f"Routed to: {routed_agent}")
             
             # Create state for the agent
             state = {
@@ -59,7 +72,22 @@ async def process_request(request: QueryRequest):
             }
             
             # Process through the graph
+            print("Processing through graph...")
             response = graph.invoke(state)
+            print(f"Graph response: {response}")
+            
+        except Exception as graph_error:
+            print(f"Graph processing error: {str(graph_error)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback response
+            return {
+                'success': False,
+                'response': f"I encountered an issue processing your request. Error: {str(graph_error)}",
+                'agent': 'Simi.ai (error)',
+                'query': request.query
+            }
         finally:
             # Always restore original directory
             os.chdir(original_cwd)
@@ -72,7 +100,17 @@ async def process_request(request: QueryRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        print(f"Backend error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return error response instead of raising HTTPException
+        return {
+            'success': False,
+            'response': f"System error: {str(e)}",
+            'agent': 'Simi.ai (system error)',
+            'query': request.query
+        }
 
 @app.get("/health")
 async def health_check():
