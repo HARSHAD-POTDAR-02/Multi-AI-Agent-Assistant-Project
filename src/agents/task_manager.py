@@ -535,6 +535,12 @@ def manage_tasks(state):
     """Main function for task management agent"""
     print("---MANAGE TASKS---")
     user_query = state["user_query"]
+    conversation_history = state.get("conversation_history", [])
+    
+    # Debug: Print conversation history
+    print(f"Task Manager - Conversation history has {len(conversation_history)} items")
+    if len(conversation_history) > 1:
+        print(f"Previous messages: {[(item.get('role'), item.get('content')[:50] + '...' if len(item.get('content', '')) > 50 else item.get('content')) for item in conversation_history[:-1]]}")
     
     # If this is not actually a task-related request, redirect to general chat
     task_keywords = ['task', 'todo', 'to-do', 'create', 'add', 'list', 'manage', 'complete', 'finish']
@@ -557,13 +563,41 @@ def manage_tasks(state):
             if title:
                 task_id = task_manager.create_task(title)
                 if task_id:
-                    return {"response": f"Task created: '{title}' (ID: {task_id})"}
+                    # Check if user mentioned their name in conversation history
+                    user_name = None
+                    for item in conversation_history:
+                        if item.get('role') == 'user':
+                            content = item.get('content', '').lower()
+                            if 'my name is' in content:
+                                name_part = content.split('my name is')[1].strip()
+                                user_name = name_part.split()[0] if name_part else None
+                                break
+                    
+                    response = f"Task created: '{title}' (ID: {task_id})"
+                    if user_name:
+                        response += f" Great work, {user_name.title()}! I remember you from our earlier conversation."
+                    
+                    return {"response": response}
                 else:
                     return {"response": "Failed to create task. Please try again."}
             else:
                 return {"response": "Please provide a task title. Example: 'Create task: Finish report'"}
         
-        return {"response": f"Task Manager: I have received your request to: {user_query}"}
+        # Check for memory demonstration
+        user_name = None
+        for item in conversation_history:
+            if item.get('role') == 'user':
+                content = item.get('content', '').lower()
+                if 'my name is' in content:
+                    name_part = content.split('my name is')[1].strip()
+                    user_name = name_part.split()[0] if name_part else None
+                    break
+        
+        response = f"Task Manager: I have received your request to: {user_query}"
+        if user_name:
+            response += f" I remember you mentioned your name is {user_name.title()} earlier."
+        
+        return {"response": response}
         
     except Exception as e:
         logger.error(f"Error in manage_tasks: {e}")

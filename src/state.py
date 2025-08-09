@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Any
+from typing import TypedDict, Optional, Any, List, Dict
 
 class GraphState(TypedDict):
     """
@@ -7,7 +7,10 @@ class GraphState(TypedDict):
     Attributes:
         user_query: The user's request.
         routed_agent: The agent that the router has selected.
-        response: The final response from the agent.
+        response: str
+        conversation_history: List of conversation messages
+        context: Additional context for the conversation
+        session_id: Unique session identifier
         task_action: The action to be performed by the task manager.
         task_id: The ID of the task to be modified.
         task_description: The description of the task.
@@ -16,6 +19,9 @@ class GraphState(TypedDict):
     user_query: str
     routed_agent: str
     response: str
+    conversation_history: List[Dict[str, Any]]
+    context: Dict[str, Any]
+    session_id: str
     task_action: Optional[str]
     task_id: Optional[str]
     task_description: Optional[str]

@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
 import os
+from typing import Dict, List, Optional
+import uuid
+from datetime import datetime
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -24,8 +27,12 @@ app.add_middleware(
 # Global graph instance
 graph = None
 
+# Session storage
+sessions: Dict[str, Dict] = {}
+
 class QueryRequest(BaseModel):
     query: str
+    session_id: Optional[str] = None
 
 def init_graph():
     global graph
@@ -47,6 +54,7 @@ async def process_request(request: QueryRequest):
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
         print(f"Processing query: {request.query}")
+        print(f"Received session_id: {request.session_id}")
         
         # Change to src directory for Gmail credentials
         original_cwd = os.getcwd()
@@ -63,18 +71,60 @@ async def process_request(request: QueryRequest):
             routed_agent = route_request(request.query)
             print(f"Routed to: {routed_agent}")
             
-            # Create state for the agent
+            # Get or create session
+            session_id = request.session_id or str(uuid.uuid4())
+            if session_id not in sessions:
+                sessions[session_id] = {
+                    'conversation_history': [],
+                    'context': {},
+                    'created_tasks': [],
+                    'project_type': None
+                }
+            
+            session = sessions[session_id]
+            
+            # Add current query to history
+            session['conversation_history'].append({
+                'role': 'user',
+                'content': request.query,
+                'timestamp': str(datetime.now())
+            })
+            
+            # Create state for the agent with session memory
             state = {
                 'user_query': request.query,
                 'routed_agent': routed_agent,
-                'conversation_history': [],
-                'context': {}
+                'response': '',  # Will be filled by agent
+                'conversation_history': session['conversation_history'],
+                'context': session['context'],
+                'session_id': session_id,
+                'task_action': None,
+                'task_id': None,
+                'task_description': None,
+                'supervisor': None
             }
+            
+            # Debug: Print conversation history
+            print(f"Session ID: {session_id}")
+            print(f"Conversation history length: {len(session['conversation_history'])}")
+            if session['conversation_history']:
+                print(f"Last message: {session['conversation_history'][-1]}")
             
             # Process through the graph
             print("Processing through graph...")
             response = graph.invoke(state)
             print(f"Graph response: {response}")
+            
+            # Add response to session history
+            session['conversation_history'].append({
+                'role': 'assistant',
+                'content': response.get('response', ''),
+                'agent': routed_agent,
+                'timestamp': str(datetime.now())
+            })
+            
+            # Debug: Print updated history
+            print(f"Updated history length: {len(session['conversation_history'])}")
             
         except Exception as graph_error:
             print(f"Graph processing error: {str(graph_error)}")
@@ -96,7 +146,8 @@ async def process_request(request: QueryRequest):
             'success': True,
             'response': response.get('response', 'No response from agent'),
             'agent': f'Simi.ai ({routed_agent})',
-            'query': request.query
+            'query': request.query,
+            'session_id': session_id
         }
         
     except Exception as e:

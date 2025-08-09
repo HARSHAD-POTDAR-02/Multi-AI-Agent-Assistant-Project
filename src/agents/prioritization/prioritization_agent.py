@@ -644,10 +644,30 @@ def prioritization_agent(state):
     """Main function for prioritization agent"""
     print("---PRIORITIZATION AGENT---")
     user_query = state["user_query"]
+    conversation_history = state.get("conversation_history", [])
+    
+    # Debug: Print conversation history
+    print(f"Prioritization Agent - Conversation history has {len(conversation_history)} items")
+    if len(conversation_history) > 1:
+        print(f"Previous messages: {[(item.get('role'), item.get('content')[:50] + '...' if len(item.get('content', '')) > 50 else item.get('content')) for item in conversation_history[:-1]]}")
     
     try:
         agent = PrioritizationAgent()
         response = agent.process_query(user_query)
+        
+        # Check if user mentioned their name in conversation history
+        user_name = None
+        for item in conversation_history:
+            if item.get('role') == 'user':
+                content = item.get('content', '').lower()
+                if 'my name is' in content:
+                    name_part = content.split('my name is')[1].strip()
+                    user_name = name_part.split()[0] if name_part else None
+                    break
+        
+        if user_name and "prioritize" in user_query.lower():
+            response += f"\n\nBy the way {user_name.title()}, I remember you from our earlier conversation!"
+        
         return {"response": response}
         
     except Exception as e:

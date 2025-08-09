@@ -9,6 +9,7 @@ function App() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -59,9 +60,18 @@ function App() {
     setIsLoading(true);
 
     try {
+      console.log('Sending request with session_id:', sessionId);
       const response = await axios.post('http://localhost:8000/process', {
-        query: inputValue
+        query: inputValue,
+        session_id: sessionId
       });
+
+      console.log('Received response:', response.data);
+      // Store session ID from response
+      if (response.data.session_id) {
+        console.log('Setting new session_id:', response.data.session_id);
+        setSessionId(response.data.session_id);
+      }
 
       const botMessage = {
         id: Date.now() + 1,
