@@ -18,19 +18,21 @@ def general_chat(state):
         for msg in conversation_history[-3:]:
             print(f"- {msg.get('role')}: {msg.get('content')[:50]}...")
     
-    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+    # Initialize Groq client
+    client = Groq(
+        api_key=os.environ.get("GROQ_API_KEY")
+    )
     
     from .memory_mixin import get_conversation_context
     
-    # Build conversation context with stronger memory emphasis
+    # Build conversation context
     messages = [
         {
             "role": "system", 
-            "content": """You are Simi.ai, a helpful AI assistant with perfect memory of our conversation.
-            IMPORTANT: You must reference and acknowledge previous parts of the conversation. 
-            When the user mentions something from earlier, explicitly acknowledge it.
-            Show continuity in the conversation by connecting new responses to previous context.
-            Be friendly, informative, and demonstrate that you remember our discussion."""
+            "content": """You are Simi.ai, a helpful AI assistant. Be natural and conversational.
+            Remember previous parts of our conversation when relevant, but don't force references to past messages.
+            Respond appropriately to the current message - if it's a simple greeting, give a simple friendly response.
+            Be helpful, friendly, and engaging."""
         }
     ]
     
@@ -42,9 +44,7 @@ def general_chat(state):
         if role == 'user':
             messages.append({"role": "user", "content": content})
         elif role == 'assistant':
-            # Include agent identity in assistant messages
-            agent_prefix = f"[{msg.get('agent', 'Assistant')}] " if msg.get('agent') else ''
-            messages.append({"role": "assistant", "content": f"{agent_prefix}{content}"})
+            messages.append({"role": "assistant", "content": content})
     
     # Add the current query
     
@@ -59,8 +59,8 @@ def general_chat(state):
     try:
         response = client.chat.completions.create(
             messages=messages,
-            model="llama3-8b-8192",
-            temperature=0.7,  # Higher temperature for more creative responses
+            model="openai/gpt-oss-120b",
+            temperature=0.9,  # High temperature for creative responses
             max_tokens=1000
         )
         

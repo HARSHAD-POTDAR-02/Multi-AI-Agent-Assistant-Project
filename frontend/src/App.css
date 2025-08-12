@@ -232,7 +232,6 @@
 .user-message {
   background: rgba(74, 144, 226, 0.1);
   margin-left: auto;
-  text-align: right;
   border: 1px solid rgba(74, 144, 226, 0.2);
   color: #e8e8e8;
 }
