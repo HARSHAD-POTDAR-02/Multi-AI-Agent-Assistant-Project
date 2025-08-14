@@ -10,6 +10,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('default');
+
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -20,6 +23,45 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const themes = {
+    default: { name: 'Default Enhanced', bg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', chatBg: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', userBubble: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)', aiBubble: '#2a2a2a', primary: '#00d4ff', text: '#ffffff', sidebarBg: 'rgba(15, 32, 39, 0.95)', sidebarText: '#ffffff', inputBg: '#2a2a2a', inputBorder: '#00d4ff' },
+    executive: { name: 'Executive Dark', bg: 'linear-gradient(180deg, #1a1a1a 0%, #121212 100%)', chatBg: '#1a1a1a', userBubble: '#1e2a38', aiBubble: '#242424', primary: '#009b9b', text: '#e0e0e0', sidebarBg: 'rgba(26, 26, 26, 0.95)', sidebarText: '#e0e0e0', inputBg: '#242424', inputBorder: '#2a2a2a' },
+    professional: { name: 'Professional Light', bg: '#f5f5f5', chatBg: '#f5f5f5', userBubble: '#d0e2f2', aiBubble: '#eaeaea', primary: '#3a7ca5', text: '#333333', sidebarBg: 'rgba(51, 51, 51, 0.95)', sidebarText: '#ffffff', inputBg: '#ffffff', inputBorder: '#d0e2f2' },
+    calm: { name: 'Calm Neutral', bg: '#f8f8f6', chatBg: '#f8f8f6', userBubble: '#deddda', aiBubble: '#ececea', primary: '#6b8e78', text: '#2f2f2f', sidebarBg: 'rgba(47, 47, 47, 0.95)', sidebarText: '#ffffff', inputBg: '#ffffff', inputBorder: '#deddda' },
+    midnight: { name: 'Midnight Steel', bg: 'linear-gradient(180deg, #1e1e2f 0%, #151521 100%)', chatBg: 'linear-gradient(180deg, #1e1e2f 0%, #151521 100%)', userBubble: '#2e3a4f', aiBubble: '#222233', primary: '#5d85aa', text: '#dddddd', sidebarBg: 'rgba(30, 30, 47, 0.95)', sidebarText: '#dddddd', inputBg: '#222233', inputBorder: '#2e3a4f' }
+  };
+
+  const applyTheme = (themeKey) => {
+    const theme = themes[themeKey];
+    const root = document.documentElement;
+    root.style.setProperty('--bg-color', theme.bg);
+    root.style.setProperty('--primary-color', theme.primary);
+    root.style.setProperty('--accent1-color', theme.accent1);
+    root.style.setProperty('--accent2-color', theme.accent2);
+    root.style.setProperty('--text-color', theme.text);
+    root.style.setProperty('--sidebar-bg', theme.sidebarBg);
+    root.style.setProperty('--sidebar-text', theme.sidebarText);
+    setCurrentTheme(themeKey);
+    setShowThemeSelector(false);
+  };
+
+  useEffect(() => {
+    applyTheme('default');
+  }, []);
+
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.theme-button') && !event.target.closest('.theme-selector-floating')) {
+        setShowThemeSelector(false);
+      }
+
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const autoResize = () => {
     const textarea = textareaRef.current;
@@ -114,18 +156,6 @@ function App() {
             <span className="menu-icon">◉</span>
             <span>Chat</span>
           </div>
-          <div className="menu-item">
-            <span className="menu-icon">✉</span>
-            <span>Email</span>
-          </div>
-          <div className="menu-item">
-            <span className="menu-icon">☐</span>
-            <span>Tasks</span>
-          </div>
-          <div className="menu-item">
-            <span className="menu-icon">▲</span>
-            <span>Analytics</span>
-          </div>
         </div>
       </div>
 
@@ -186,6 +216,25 @@ function App() {
           </div>
         </div>
       </main>
+      
+      <div className="theme-button" onClick={() => setShowThemeSelector(!showThemeSelector)}>
+        🎨
+      </div>
+      
+      {showThemeSelector && (
+        <div className="theme-selector-floating">
+          {Object.entries(themes).map(([key, theme]) => (
+            <div 
+              key={key}
+              className={`theme-option ${currentTheme === key ? 'active' : ''}`}
+              onClick={() => applyTheme(key)}
+            >
+              <div className="theme-preview" style={{backgroundColor: theme.primary}}></div>
+              <span>{theme.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
