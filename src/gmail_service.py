@@ -28,7 +28,7 @@ def get_gmail_service():
             creds.refresh(Request())
         else:
             if not os.path.exists(credentials_path):
-                return None, "Please add credentials.json file from Google Cloud Console"
+                return None, "Gmail setup required: credentials.json file not found. Please follow these steps:\n1. Go to Google Cloud Console\n2. Create a project and enable Gmail API\n3. Create OAuth credentials\n4. Download credentials.json\n5. Place it in the src directory"
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
         

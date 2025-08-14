@@ -32,7 +32,7 @@ except ImportError:
     def triage_emails(state): return {"response": "Email not available"}
 
 try:
-    from agents.focus_support import support_focus
+    from agents.focus.focus_agent import support_focus
 except ImportError:
     def support_focus(state): return {"response": "Focus support not available"}
 
