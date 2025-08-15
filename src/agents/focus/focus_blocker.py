@@ -21,6 +21,7 @@ class FocusBlocker:
         self.block_thread = None
         self.hosts_file = r"C:\Windows\System32\drivers\etc\hosts"
         self.backup_file = r"C:\Windows\System32\drivers\etc\hosts.backup"
+        self.dnd_toggled = False
 
     def is_admin(self):
         """Check if running with admin privileges"""
@@ -70,12 +71,16 @@ class FocusBlocker:
         except Exception as e:
             results.append(f"❌ App closing failed: {str(e)}")
         
-        # Method 5: Enable Focus Assist
-        try:
-            self._enable_focus_assist()
-            results.append("✅ Focus Assist enabled")
-        except Exception as e:
-            results.append(f"❌ Focus Assist failed: {str(e)}")
+        # Method 5: Toggle DND (only once)
+        if not self.dnd_toggled:
+            try:
+                self._toggle_dnd()
+                self.dnd_toggled = True
+                results.append("✅ DND toggled")
+            except Exception as e:
+                results.append(f"❌ DND toggle failed: {str(e)}")
+        else:
+            results.append("ℹ️ DND already toggled")
         
         return "Focus mode activated:\n" + "\n".join(results)
 
@@ -152,7 +157,13 @@ echo # Focus mode blocks - AUTO GENERATED >> "C:\\Windows\\System32\\drivers\\et
                 batch_script += f'echo 127.0.0.1 {site} >> "C:\\Windows\\System32\\drivers\\etc\\hosts"\n'
                 batch_script += f'echo 127.0.0.1 www.{site} >> "C:\\Windows\\System32\\drivers\\etc\\hosts"\n'
             
-            batch_script += '''\nREM Flush DNS\nipconfig /flushdns >nul 2>&1\n\necho SUCCESS: Websites blocked!\ntimeout /t 2 >nul\n'''
+            batch_script += '''
+REM Flush DNS
+ipconfig /flushdns >nul 2>&1
+
+echo SUCCESS: Websites blocked!
+timeout /t 2 >nul
+'''
             
             # Write batch file
             batch_path = "focus_block_temp.bat"
@@ -174,65 +185,6 @@ echo # Focus mode blocks - AUTO GENERATED >> "C:\\Windows\\System32\\drivers\\et
             return result.returncode == 0
         except Exception as e:
             print(f"Auto-elevation error: {e}")
-            return False
-
-    def _create_blocking_batch(self):
-        """Create a batch file for manual admin execution"""
-        try:
-            batch_content = f'''@echo off
-echo Creating website blocks...
-echo.
-
-REM Backup hosts file
-if not exist "{self.backup_file}" (
-    copy "{self.hosts_file}" "{self.backup_file}"
-    echo Hosts file backed up
-)
-
-REM Add blocked sites
-echo. >> "{self.hosts_file}"
-echo # Focus mode blocks - AUTO GENERATED >> "{self.hosts_file}"
-'''
-            
-            for site in self.blocked_websites:
-                batch_content += f'echo 127.0.0.1 {site} >> "{self.hosts_file}"\n'
-                batch_content += f'echo 127.0.0.1 www.{site} >> "{self.hosts_file}"\n'
-            
-            batch_content += f'''
-REM Flush DNS
-ipconfig /flushdns >nul 2>&1
-
-echo.
-echo SUCCESS: {len(self.blocked_websites)} websites blocked!
-echo Press any key to close...
-pause >nul
-'''
-            
-            # Try multiple desktop paths
-            possible_paths = [
-                os.path.join(os.path.expanduser("~"), "OneDrive", "Desktop"),
-                os.path.join(os.path.expanduser("~"), "Desktop"),
-                os.getcwd()  # Current directory as fallback
-            ]
-            
-            batch_path = None
-            for path in possible_paths:
-                try:
-                    if os.path.exists(path):
-                        batch_path = os.path.join(path, "FocusMode_BlockWebsites.bat")
-                        break
-                except:
-                    continue
-            
-            if not batch_path:
-                batch_path = "FocusMode_BlockWebsites.bat"  # Final fallback
-            
-            with open(batch_path, 'w') as f:
-                f.write(batch_content)
-            
-            return True
-        except Exception as e:
-            print(f"Batch creation error: {e}")
             return False
 
     def _continuous_blocking(self):
@@ -263,31 +215,6 @@ pause >nul
                 continue
         return closed_apps
 
-    def _enable_focus_assist(self):
-        """Enable Windows Focus Assist"""
-        try:
-            # Disable notification sounds
-            subprocess.run([
-                'reg', 'add',
-                'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings',
-                '/v', 'NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND',
-                '/t', 'REG_DWORD',
-                '/d', '0',
-                '/f'
-            ], capture_output=True)
-            
-            # Disable toast notifications
-            subprocess.run([
-                'reg', 'add',
-                'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PushNotifications',
-                '/v', 'ToastEnabled',
-                '/t', 'REG_DWORD',
-                '/d', '0',
-                '/f'
-            ], capture_output=True)
-        except Exception as e:
-            print(f"Focus Assist error: {e}")
-
     def disable_focus_mode(self):
         """Disable focus mode with auto-elevation"""
         results = []
@@ -315,19 +242,14 @@ pause >nul
             except Exception as e:
                 results.append(f"❌ Restore error: {str(e)}")
         
-        # Restore notifications
-        try:
-            subprocess.run([
-                'reg', 'add',
-                'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings',
-                '/v', 'NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND',
-                '/t', 'REG_DWORD',
-                '/d', '1',
-                '/f'
-            ], capture_output=True)
-            results.append("✅ Notifications restored")
-        except:
-            results.append("⚠️ Notification restore failed")
+        # Toggle DND off when ending session
+        if self.dnd_toggled:
+            try:
+                self._toggle_dnd()
+                self.dnd_toggled = False
+                results.append("✅ DND turned off")
+            except Exception as e:
+                results.append(f"❌ DND toggle failed: {str(e)}")
         
         return "Focus mode deactivated:\n" + "\n".join(results)
     
@@ -397,6 +319,59 @@ timeout /t 2 >nul
             "blocked_apps_count": len(self.blocked_apps)
         }
 
+    def _toggle_dnd(self):
+        """Run AutoHotkey script to toggle DND"""
+        ahk_script = os.path.join(os.path.dirname(__file__), 'ToggleDND.ahk')
+        if os.path.exists(ahk_script):
+            subprocess.run([ahk_script], shell=True, check=True)
+        else:
+            raise FileNotFoundError(f"AutoHotkey script not found: {ahk_script}")
+
+    def pause_focus_mode(self):
+        """Pause focus mode and turn off DND"""
+        results = []
+        
+        # Stop app monitoring
+        self.is_blocking = False
+        if self.block_thread:
+            self.block_thread.join(timeout=2)
+        results.append("✅ App monitoring paused")
+        
+        # Turn off DND when pausing
+        if self.dnd_toggled:
+            try:
+                self._toggle_dnd()
+                self.dnd_toggled = False
+                results.append("✅ DND turned off (paused)")
+            except Exception as e:
+                results.append(f"❌ DND toggle failed: {str(e)}")
+        
+        return "Focus mode paused:\n" + "\n".join(results)
+    
+    def resume_focus_mode(self):
+        """Resume focus mode and turn on DND"""
+        results = []
+        
+        # Restart app monitoring
+        try:
+            self.is_blocking = True
+            self.block_thread = threading.Thread(target=self._continuous_blocking, daemon=True)
+            self.block_thread.start()
+            results.append("✅ App monitoring resumed")
+        except Exception as e:
+            results.append(f"❌ App monitoring failed: {str(e)}")
+        
+        # Turn on DND when resuming
+        if not self.dnd_toggled:
+            try:
+                self._toggle_dnd()
+                self.dnd_toggled = True
+                results.append("✅ DND turned on (resumed)")
+            except Exception as e:
+                results.append(f"❌ DND toggle failed: {str(e)}")
+        
+        return "Focus mode resumed:\n" + "\n".join(results)
+
     def _firewall_unblock_sites(self):
         """Remove firewall blocking rules"""
         for site in self.blocked_websites:
@@ -407,15 +382,3 @@ timeout /t 2 >nul
                 ], capture_output=True)
             except:
                 continue  # Rule might not exist
-    
-    def _check_focus_assist(self):
-        """Check Focus Assist status"""
-        try:
-            result = subprocess.run([
-                'reg', 'query',
-                'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings',
-                '/v', 'NOC_GLOBAL_SETTING_ALLOW_NOTIFICATION_SOUND'
-            ], capture_output=True, text=True)
-            return "0x0" in result.stdout
-        except:
-            return False
