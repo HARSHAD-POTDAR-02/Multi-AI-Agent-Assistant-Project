@@ -41,18 +41,21 @@ class SupervisorAgent:
 
 Available agents:
 - email_support: Handle email sending, reading, managing
-- task_management: Create, update, delete tasks and projects
+- task_management: Create, update, delete tasks and projects (PRIORITY for any task operations with #ID)
 - focus_support: Start/stop focus sessions, block distractions
 - general_assistant: General questions, conversations, help
 - calendar_support: Schedule meetings, manage calendar events
 - analytics_support: Show analytics, reports, insights
 - reminder_support: Set reminders, notifications, alerts
 
-Your job is to:
-1. Analyze the user's request
-2. Decide which agent(s) to use
-3. Determine if multiple agents are needed for coordination
-4. Set the next action
+IMPORTANT ROUTING RULES:
+- Analyze the user's request
+- Decise which agent(s) to use
+- Determine if multiple agents are needed for coordination
+- Set the next action
+- ANY query with "task #" or "#" followed by numbers goes to task_management
+- ANY query with "update task", "complete task", "delete task" goes to task_management
+- ANY query with "make task" or "change task" goes to task_management
 
 Recent conversation context:
 {context}
@@ -150,10 +153,10 @@ If the request needs multiple agents, start with the most important one."""
         """Calculate confidence score for agent selection"""
         query_lower = query.lower()
         
-        # Agent-specific keywords
+        # Agent-specific keywords with priority rules
         agent_keywords = {
             'email_support': ['email', 'send', 'mail', 'message', 'reply'],
-            'task_management': ['task', 'todo', 'project', 'deadline', 'create'],
+            'task_management': ['task #', '#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', 'update task', 'complete task', 'delete task', 'make task', 'change task', 'task', 'todo', 'to-do', 'project', 'deadline', 'create', 'add', 'list', 'complete', 'finish', 'update', 'delete', 'manage'],
             'focus_support': ['focus', 'concentrate', 'distraction', 'session'],
             'general_assistant': ['help', 'what', 'how', 'explain', 'tell me']
         }
@@ -195,13 +198,11 @@ If the request needs multiple agents, start with the most important one."""
     
     def should_continue(self, state: Dict[str, Any]) -> str:
         """Determine if we should continue to agents or end"""
-        supervisor_info = state.get('supervisor', {})
+        # If there's already a response, we're done
+        if state.get('response'):
+            return "END"
         
-        if supervisor_info.get('coordination_needed', False):
-            # For now, route to the selected agent
-            # Future: implement multi-agent coordination
-            return state.get('routed_agent', 'general_assistant')
-        
+        # Otherwise, route to the selected agent
         return state.get('routed_agent', 'general_assistant')
     
     def finalize_response(self, state: Dict[str, Any]) -> Dict[str, Any]:

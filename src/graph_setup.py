@@ -3,41 +3,40 @@ from typing import Dict, Any
 from state import GraphState
 from agents.supervisor import SupervisorAgent
 
-# Import agents with error handling
-# Import all agents with fallbacks
-try:
-    from agents.email.email_agent import EmailAgent
-except ImportError:
-    class EmailAgent:
-        def process_request(self, state): return {"response": "Email agent not available"}
+# Import actual agents and create wrapper classes
+from agents.task.task_agent import TaskAgent
 
-try:
-    from agents.task.task_agent import TaskAgent
-except ImportError:
-    class TaskAgent:
-        def process_request(self, state): return {"response": "Task agent not available"}
+class EmailAgent:
+    def process_request(self, state):
+        from agents.email_triage_web import triage_emails
+        return triage_emails(state)
 
-try:
-    from agents.focus.focus_agent import FocusAgent
-except ImportError:
-    class FocusAgent:
-        def process_request(self, state): return {"response": "Focus agent not available"}
+class FocusAgent:
+    def process_request(self, state):
+        from agents.focus.focus_agent import support_focus
+        return support_focus(state)
 
-try:
-    from agents.general.general_agent import GeneralAgent
-except ImportError:
-    class GeneralAgent:
-        def process_request(self, state): return {"response": "General agent not available"}
+class GeneralAgent:
+    def process_request(self, state):
+        from agents.general_chat import general_chat
+        return general_chat(state)
 
-# Additional agents (placeholders)
 class CalendarAgent:
-    def process_request(self, state): return {"response": "Calendar agent not available"}
+    def process_request(self, state):
+        from agents.calendar_orchestrator import orchestrate_calendar
+        return orchestrate_calendar(state)
 
 class AnalyticsAgent:
-    def process_request(self, state): return {"response": "Analytics agent not available"}
+    def process_request(self, state):
+        from agents.analytics_dashboard import show_analytics
+        return show_analytics(state)
 
 class ReminderAgent:
-    def process_request(self, state): return {"response": "Reminder agent not available"}
+    def process_request(self, state):
+        from agents.smart_reminders import send_reminders
+        return send_reminders(state)
+
+
 
 
 def build_graph():
@@ -112,11 +111,12 @@ def build_graph():
             "general_assistant": "general_assistant",
             "calendar_support": "calendar_support",
             "analytics_support": "analytics_support",
-            "reminder_support": "reminder_support"
+            "reminder_support": "reminder_support",
+            "END": END
         }
     )
     
-    # All agents return to supervisor with solid edges
+    # All agents return to supervisor
     workflow.add_edge("email_support", "supervisor")
     workflow.add_edge("task_management", "supervisor")
     workflow.add_edge("focus_support", "supervisor")
@@ -124,9 +124,6 @@ def build_graph():
     workflow.add_edge("calendar_support", "supervisor")
     workflow.add_edge("analytics_support", "supervisor")
     workflow.add_edge("reminder_support", "supervisor")
-    
-    # Supervisor connects to END with solid edge
-    workflow.add_edge("supervisor", END)
     
     # Compile the graph
     return workflow.compile()
