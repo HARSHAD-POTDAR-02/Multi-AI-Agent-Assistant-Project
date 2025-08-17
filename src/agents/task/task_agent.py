@@ -38,6 +38,8 @@ class TaskAgent:
             return self._delete_task(intent_response, user_query)
         elif intent_response['action'] == 'complete':
             return self._complete_task(intent_response, user_query)
+        elif intent_response['action'] == 'prioritize':
+            return self._prioritize_tasks(user_query)
         else:
             return {"response": f"Task Manager: {intent_response.get('response', 'I can help you create, list, update, delete, or complete tasks.')}"}
     
@@ -49,13 +51,19 @@ class TaskAgent:
         if id_match:
             task_id = int(id_match.group(1))
         
+        # Check for prioritization/sequencing queries
+        query_lower = query.lower()
+        priority_keywords = ['priority', 'prioritize', 'sequence', 'order', 'focus', 'urgent', 'important']
+        if any(keyword in query_lower for keyword in priority_keywords):
+            return {"action": "prioritize", "task_id": task_id}
+        
         system_prompt = f"""Analyze this task request: "{query}"
 
 Task ID found: {task_id if task_id else "none"}
 
 Respond with JSON:
 {{
-  "action": "create|list|update|delete|complete|help",
+  "action": "create|list|update|delete|complete|prioritize|help",
   "task_id": {task_id if task_id else "null"},
   "title": "task title if creating",
   "priority": "high|medium|low if specified",
@@ -235,3 +243,49 @@ Respond with JSON:
             return {"response": f"🎉 Task Manager: Completed task #{task_id}: '{task['title']}'"}
         else:
             return {"response": f"Task Manager: Failed to complete task #{task_id}"}
+    
+    def _prioritize_tasks(self, query: str) -> Dict[str, Any]:
+        """Provide task prioritization and sequencing"""
+        tasks = self.storage.get_all_tasks()
+        pending_tasks = [t for t in tasks if t['status'] == 'pending']
+        
+        if not pending_tasks:
+            return {"response": "📋 No pending tasks to prioritize."}
+        
+        # Sort by priority and due date
+        sorted_tasks = self.utils.sort_tasks_by_priority(pending_tasks)
+        
+        query_lower = query.lower()
+        
+        if 'sequence' in query_lower or 'order' in query_lower or 'efficient' in query_lower:
+            # Provide task sequence
+            response = "📋 **Optimal Task Sequence:**\n\n"
+            for i, task in enumerate(sorted_tasks[:5], 1):
+                due_info = f" (Due: {task['due_date']})" if task.get('due_date') else ""
+                desc_info = f"\n     📝 {task['description']}" if task.get('description') else ""
+                response += f"{i}. **#{task['id']}** {task['title']}{due_info}{desc_info}\n"
+            
+            response += "\n💡 **Why this order:**\n"
+            response += "• Urgent tasks with deadlines first\n"
+            response += "• High priority items next\n"
+            response += "• Quick wins to build momentum\n"
+            
+        elif 'focus' in query_lower or 'right now' in query_lower:
+            # Focus on immediate task
+            top_task = sorted_tasks[0]
+            due_info = f" (Due: {top_task['due_date']})" if top_task.get('due_date') else ""
+            response = f"🎯 **Focus on:** #{top_task['id']} {top_task['title']}{due_info}\n\n"
+            response += f"**Priority:** {top_task['priority'].title()}\n"
+            if top_task.get('description'):
+                response += f"**Details:** {top_task['description']}\n"
+            
+        else:
+            # General prioritization
+            response = "🎯 **Task Priorities:**\n\n"
+            for task in sorted_tasks:
+                priority_emoji = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(task['priority'], '🟡')
+                due_info = f" (Due: {task['due_date']})" if task.get('due_date') else ""
+                desc_info = f"\n     📝 {task['description']}" if task.get('description') else ""
+                response += f"{priority_emoji} **#{task['id']}** {task['title']}{due_info}{desc_info}\n"
+        
+        return {"response": response}

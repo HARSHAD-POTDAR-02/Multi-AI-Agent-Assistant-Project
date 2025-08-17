@@ -127,3 +127,33 @@ class TaskUtils:
             suggestions.append(f"📅 {len(due_soon)} task(s) due tomorrow.")
         
         return suggestions
+    
+    @staticmethod
+    def sort_tasks_by_priority(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Sort tasks by priority and due date"""
+        def priority_score(task):
+            # Priority weights
+            priority_weights = {'high': 3, 'medium': 2, 'low': 1}
+            score = priority_weights.get(task.get('priority', 'medium'), 2)
+            
+            # Due date urgency
+            if task.get('due_date'):
+                try:
+                    due_date = datetime.strptime(task['due_date'], '%Y-%m-%d')
+                    today = datetime.now()
+                    days_until_due = (due_date - today).days
+                    
+                    if days_until_due < 0:  # Overdue
+                        score += 10
+                    elif days_until_due == 0:  # Due today
+                        score += 5
+                    elif days_until_due == 1:  # Due tomorrow
+                        score += 3
+                    elif days_until_due <= 7:  # Due this week
+                        score += 1
+                except:
+                    pass
+            
+            return score
+        
+        return sorted(tasks, key=priority_score, reverse=True)

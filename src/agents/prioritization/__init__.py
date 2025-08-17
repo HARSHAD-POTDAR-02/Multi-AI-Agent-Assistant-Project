@@ -1,14 +1,15 @@
-from .prioritization_agent import prioritization_agent
-from .scoring_engine import PriorityScorer
-from .goal_mapper import GoalMapper
-from .models import Goal, GoalType, PriorityScore, UserPreferences
+from .prioritization_agent import PrioritizationAgent, prioritization_agent
+from .enhanced_models import ContextState, UserBehavior, ProactiveInsight, SmartPriorityScore
+from .smart_scorer import SmartPriorityScorer
+from .natural_interface import NaturalLanguageInterface
 
 __all__ = [
+    'PrioritizationAgent',
     'prioritization_agent',
-    'PriorityScorer', 
-    'GoalMapper',
-    'Goal',
-    'GoalType',
-    'PriorityScore',
-    'UserPreferences'
+    'ContextState',
+    'UserBehavior', 
+    'ProactiveInsight',
+    'SmartPriorityScore',
+    'SmartPriorityScorer',
+    'NaturalLanguageInterface'
 ]

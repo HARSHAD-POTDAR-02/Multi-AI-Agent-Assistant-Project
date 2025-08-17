@@ -14,6 +14,7 @@ class SupervisorAgent:
         self.available_agents = [
             "email_support",
             "task_management", 
+            "prioritization",
             "focus_support",
             "general_assistant",
             "calendar_support",
@@ -65,6 +66,7 @@ User query: {user_query}
 Respond with ONLY the agent name that should handle this request. Choose ONE:
 - email_support
 - task_management  
+- prioritization
 - focus_support
 - general_assistant
 - calendar_support
@@ -156,8 +158,9 @@ If the request needs multiple agents, start with the most important one."""
         # Agent-specific keywords with priority rules
         agent_keywords = {
             'email_support': ['email', 'send', 'mail', 'message', 'reply'],
-            'task_management': ['task #', '#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', 'update task', 'complete task', 'delete task', 'make task', 'change task', 'task', 'todo', 'to-do', 'project', 'deadline', 'create', 'add', 'list', 'complete', 'finish', 'update', 'delete', 'manage'],
-            'focus_support': ['focus', 'concentrate', 'distraction', 'session'],
+            'task_management': ['task #', '#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', 'update task', 'complete task', 'delete task', 'make task', 'change task', 'create task', 'add task', 'list tasks', 'show tasks'],
+            'prioritization': ['which task', 'what task', 'prioritize', 'focus on', 'should i work', 'next task', 'priority', 'important'],
+            'focus_support': ['focus session', 'start focus', 'concentrate', 'distraction', 'block'],
             'general_assistant': ['help', 'what', 'how', 'explain', 'tell me']
         }
         

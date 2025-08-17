@@ -15,84 +15,192 @@
       "title": "Submit quarterly report",
       "description": "",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "due_date": "",
-      "completed_at": null,
+      "completed_at": "2025-08-15T21:42:14.790165",
       "id": 2,
-      "created_at": "2025-08-15T20:59:55.421843"
+      "created_at": "2025-08-15T20:59:55.421843",
+      "updated_at": "2025-08-15T21:42:14.790165"
     },
     {
       "title": "Call dentist",
       "description": "",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "due_date": "2025-08-16",
-      "completed_at": null,
+      "completed_at": "2025-08-17T16:25:35.803512",
       "id": 3,
-      "created_at": "2025-08-15T21:00:05.611556"
+      "created_at": "2025-08-15T21:00:05.611556",
+      "updated_at": "2025-08-17T16:25:35.803512"
     },
     {
-      "title": "Prepare presentation",
+      "title": "Fix critical production bug in authentication system",
       "description": "",
-      "priority": "medium",
-      "status": "pending",
-      "due_date": "2025-08-22",
-      "completed_at": null,
+      "priority": "high",
+      "status": "completed",
+      "due_date": "2025-08-18",
+      "completed_at": "2025-08-17T16:55:59.971898",
       "id": 4,
-      "created_at": "2025-08-15T21:00:19.846375"
+      "created_at": "2025-08-15T21:00:19.846375",
+      "updated_at": "2025-08-17T17:02:07.670677"
     },
     {
       "title": "Fix production bug",
       "description": "Urgent task to fix production bug",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "due_date": "2025-08-15",
-      "completed_at": null,
+      "completed_at": "2025-08-15T21:53:20.016284",
       "id": 5,
-      "created_at": "2025-08-15T21:02:43.510992"
+      "created_at": "2025-08-15T21:02:43.510992",
+      "updated_at": "2025-08-15T21:53:20.016284"
     },
     {
       "title": "Team meeting",
       "description": "Team meeting tomorrow at 2pm",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "due_date": "2025-08-16",
-      "completed_at": null,
+      "completed_at": "2025-08-17T16:56:14.405773",
       "id": 6,
-      "created_at": "2025-08-15T21:03:02.659855"
+      "created_at": "2025-08-15T21:03:02.659855",
+      "updated_at": "2025-08-17T16:56:14.405773"
     },
     {
       "title": "Buy milk",
       "description": "",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "due_date": "",
-      "completed_at": null,
+      "completed_at": "2025-08-17T16:56:40.016131",
       "id": 7,
-      "created_at": "2025-08-15T21:03:21.502883"
+      "created_at": "2025-08-15T21:03:21.502883",
+      "updated_at": "2025-08-17T16:56:40.017120"
     },
     {
       "title": "Book movie ticket",
       "description": "Get the booking of a movie ticket done within the next 3 hours",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "due_date": "2025-08-15",
-      "completed_at": null,
+      "completed_at": "2025-08-17T16:56:55.146116",
       "id": 8,
-      "created_at": "2025-08-15T21:03:56.010433"
+      "created_at": "2025-08-15T21:03:56.010433",
+      "updated_at": "2025-08-17T16:56:55.147126"
     },
     {
       "title": "groceries",
       "description": "",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "due_date": "",
-      "completed_at": null,
+      "completed_at": "2025-08-17T16:57:14.603089",
       "id": 9,
-      "created_at": "2025-08-15T21:09:15.498240"
+      "created_at": "2025-08-15T21:09:15.498240",
+      "updated_at": "2025-08-17T16:57:14.603089"
+    },
+    {
+      "title": "Fix critical production bug in authentication system",
+      "description": "",
+      "priority": "high",
+      "status": "pending",
+      "due_date": "2025-08-18",
+      "completed_at": null,
+      "id": 10,
+      "created_at": "2025-08-17T16:58:20.163784"
+    },
+    {
+      "title": "Call mom for her birthday",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": null,
+      "completed_at": null,
+      "id": 11,
+      "created_at": "2025-08-17T17:03:01.942111"
+    },
+    {
+      "title": "Review team performance evaluations",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": "2025-08-24",
+      "completed_at": null,
+      "id": 12,
+      "created_at": "2025-08-17T17:03:09.437208"
+    },
+    {
+      "title": "Update LinkedIn profile",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": null,
+      "completed_at": null,
+      "id": 13,
+      "created_at": "2025-08-17T17:03:15.174023"
+    },
+    {
+      "title": "Emergency client meeting prep",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": "2025-08-17",
+      "completed_at": null,
+      "id": 14,
+      "created_at": "2025-08-17T17:03:22.305386"
+    },
+    {
+      "title": "Learn new React framework",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": null,
+      "completed_at": null,
+      "id": 15,
+      "created_at": "2025-08-17T17:03:27.873267"
+    },
+    {
+      "title": "Grocery shopping",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": null,
+      "completed_at": null,
+      "id": 16,
+      "created_at": "2025-08-17T17:03:45.652169"
+    },
+    {
+      "title": "Submit expense reports",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": "2025-08-16",
+      "completed_at": null,
+      "id": 17,
+      "created_at": "2025-08-17T17:04:11.573844"
+    },
+    {
+      "title": "Plan vacation itinerary",
+      "description": "",
+      "priority": "medium",
+      "status": "pending",
+      "due_date": null,
+      "completed_at": null,
+      "id": 18,
+      "created_at": "2025-08-17T17:04:34.006290"
+    },
+    {
+      "title": "Write resignation letter",
+      "description": "",
+      "priority": "high",
+      "status": "pending",
+      "due_date": "2025-08-17",
+      "completed_at": null,
+      "id": 19,
+      "created_at": "2025-08-17T17:33:29.776537"
     }
   ],
-  "next_id": 10,
+  "next_id": 20,
   "metadata": {
     "created_at": "2025-08-15T20:36:48.201464",
     "version": "1.0"

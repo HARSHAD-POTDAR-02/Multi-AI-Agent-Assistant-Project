@@ -31,6 +31,11 @@ class AnalyticsAgent:
         from agents.analytics_dashboard import show_analytics
         return show_analytics(state)
 
+class PrioritizationAgent:
+    def process_request(self, state):
+        from agents.prioritization.prioritization_agent import prioritization_agent
+        return prioritization_agent(state)
+
 class ReminderAgent:
     def process_request(self, state):
         from agents.smart_reminders import send_reminders
@@ -51,6 +56,7 @@ def build_graph():
     calendar_agent = CalendarAgent()
     analytics_agent = AnalyticsAgent()
     reminder_agent = ReminderAgent()
+    prioritization_agent = PrioritizationAgent()
     
     # Define supervisor node
     def supervisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -79,6 +85,9 @@ def build_graph():
     def reminder_node(state: Dict[str, Any]) -> Dict[str, Any]:
         return reminder_agent.process_request(state)
     
+    def prioritization_node(state: Dict[str, Any]) -> Dict[str, Any]:
+        return prioritization_agent.process_request(state)
+    
     # Define conditional routing function
     def route_to_agent(state: Dict[str, Any]) -> str:
         """Route from supervisor to appropriate agent"""
@@ -96,6 +105,7 @@ def build_graph():
     workflow.add_node("calendar_support", calendar_node)
     workflow.add_node("analytics_support", analytics_node)
     workflow.add_node("reminder_support", reminder_node)
+    workflow.add_node("prioritization", prioritization_node)
     
     # Set entry point to supervisor
     workflow.set_entry_point("supervisor")
@@ -112,6 +122,7 @@ def build_graph():
             "calendar_support": "calendar_support",
             "analytics_support": "analytics_support",
             "reminder_support": "reminder_support",
+            "prioritization": "prioritization",
             "END": END
         }
     )
@@ -124,6 +135,7 @@ def build_graph():
     workflow.add_edge("calendar_support", "supervisor")
     workflow.add_edge("analytics_support", "supervisor")
     workflow.add_edge("reminder_support", "supervisor")
+    workflow.add_edge("prioritization", "supervisor")
     
     # Compile the graph
     return workflow.compile()
