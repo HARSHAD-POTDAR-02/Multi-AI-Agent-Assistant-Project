@@ -68,7 +68,7 @@ def support_focus(state):
         try:
             response = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 temperature=0.1,
                 max_tokens=10
             )

@@ -25,8 +25,16 @@ def get_gmail_service():
     
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print(f"Token refresh failed: {e}")
+                # Delete invalid token and re-authenticate
+                if os.path.exists(token_path):
+                    os.remove(token_path)
+                creds = None
+        
+        if not creds:
             if not os.path.exists(credentials_path):
                 return None, "Gmail setup required: credentials.json file not found. Please follow these steps:\n1. Go to Google Cloud Console\n2. Create a project and enable Gmail API\n3. Create OAuth credentials\n4. Download credentials.json\n5. Place it in the src directory"
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
@@ -98,17 +106,18 @@ def create_draft_email(service, to_email, subject, body):
 
 def send_email(service, to_email, subject, body):
     """Send an email directly"""
-    message = MIMEText(body)
-    message['to'] = to_email
-    message['subject'] = subject
-    
-    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-    
     try:
+        message = MIMEText(body)
+        message['to'] = to_email
+        message['subject'] = subject
+        
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        
         sent_message = service.users().messages().send(
             userId='me', 
             body={'raw': raw_message}
         ).execute()
         return f"Email sent successfully! Message ID: {sent_message['id']}"
     except Exception as error:
+        print(f"Email send error: {error}")
         return f"Error sending email: {error}"

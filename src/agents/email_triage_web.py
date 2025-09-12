@@ -54,6 +54,9 @@ def draft_and_send_email_web(user_request, conversation_history=None, context=No
         if error:
             return {"response": f"Gmail setup needed: {error}"}
         
+        if not service:
+            return {"response": "Gmail service unavailable. Please check your authentication."}
+        
         # Direct parsing from user request
         import re
         
@@ -103,6 +106,9 @@ BODY:
         return {"response": response}
         
     except Exception as e:
+        print(f"Email processing error: {e}")
+        if "invalid_grant" in str(e).lower():
+            return {"response": "Gmail authentication expired. Please re-authenticate by running the application and following the OAuth flow."}
         return {"response": f"Error processing email: {str(e)}"}
 
 def format_chat_for_email(conversation_history):
