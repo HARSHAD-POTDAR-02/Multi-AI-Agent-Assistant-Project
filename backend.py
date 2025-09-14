@@ -173,6 +173,9 @@ async def process_request(request: QueryRequest):
 async def health_check():
     return {"status": "healthy", "message": "Simi.ai backend is running"}
 
+# For Vercel deployment
+handler = app
+
 if __name__ == "__main__":
     import uvicorn
     print("\n[ROCKET] Starting Simi.ai Backend...")

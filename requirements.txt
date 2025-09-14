@@ -36,7 +36,7 @@ google-api-python-client>=2.88.0
 
 # For diagram generation (if using diagram_generator.py)
 graphviz>=0.20.1
-pygraphviz>=1.12
+# pygraphviz>=1.12  # Removed - requires system graphviz libraries not available on Vercel
 
 # Enhanced Task Manager Dependencies
 # Note: sqlite3 is built into Python, no need to install
