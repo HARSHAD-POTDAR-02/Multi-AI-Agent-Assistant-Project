@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
 import os
+
+# Set UTF-8 encoding for Windows console
+if sys.platform == 'win32':
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 from typing import Dict, List, Optional
 import uuid
 from datetime import datetime
@@ -18,7 +24,7 @@ app = FastAPI(title="Simi.ai API", version="1.0.0")
 # Enable CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -170,6 +176,6 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     print("\n[ROCKET] Starting Simi.ai Backend...")
-    print("[API] API available at: http://localhost:8000")
-    print("[DOCS] API docs at: http://localhost:8000/docs\n")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("[API] API available at: http://localhost:8003")
+    print("[DOCS] API docs at: http://localhost:8003/docs\n")
+    uvicorn.run(app, host="0.0.0.0", port=8003)

@@ -103,7 +103,7 @@ function App() {
 
     try {
       console.log('Sending request with session_id:', sessionId);
-      const response = await axios.post('http://localhost:8000/process', {
+      const response = await axios.post('http://localhost:8003/process', {
         query: inputValue,
         session_id: sessionId
       });

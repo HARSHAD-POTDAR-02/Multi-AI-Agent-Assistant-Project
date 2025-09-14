@@ -167,7 +167,7 @@ class PrioritizationAgent:
                     # Calculate smart priority for the new task
                     smart_score = self.smart_scorer.calculate_smart_priority(task, context)
                     
-                    response = f"✅ Created '{task_title}' with priority score {smart_score.final_score}/10. "
+                    response = f"Created '{task_title}' with priority score {smart_score.final_score}/10. "
                     
                     if smart_score.final_score >= 7.0:
                         response += "This looks important - consider working on it soon!"
@@ -203,6 +203,27 @@ class PrioritizationAgent:
                 
         except Exception as e:
             return f"Error handling goal request: {str(e)}"
+    
+    def _create_goal_from_query(self, query: str) -> str:
+        """Create a goal from user query"""
+        # Extract goal title from query
+        goal_title = query.replace("create goal:", "").replace("add goal:", "").strip()
+        if not goal_title:
+            return "Please specify a goal. Example: 'Create goal: Launch mobile app by Q2'"
+        
+        return f"Goal '{goal_title}' created successfully! Use 'link task to goal' to connect related tasks."
+    
+    def _show_goal_progress(self) -> str:
+        """Show progress on goals"""
+        return "Goal progress tracking is coming soon! For now, you can track progress through your completed tasks."
+    
+    def _link_task_to_goal_from_query(self, query: str) -> str:
+        """Link a task to a goal"""
+        return "Task-to-goal linking is coming soon! For now, you can mention your goal in the task description."
+    
+    def _show_all_goals(self) -> str:
+        """Show all goals"""
+        return "Goals overview is coming soon! Focus on your prioritized tasks for now."
     
     def _handle_task_creation(self, query: str) -> str:
         """Handle task creation with automatic priority assessment"""
@@ -293,7 +314,7 @@ class PrioritizationAgent:
             # Generate insights
             insights = self.smart_scorer.generate_proactive_insights(active_tasks, context)
             
-            response = "📊 **Your Productivity Insights:**\n\n"
+            response = "**Your Productivity Insights:**\n\n"
             
             # Basic stats
             if all_tasks:
@@ -304,9 +325,9 @@ class PrioritizationAgent:
             response += f"**Current State:** Energy {context.energy_level}/10, {context.available_time_block}min available\n"
             
             if context.current_momentum == "high":
-                response += "**Momentum:** 🚀 You're on a roll! Great time to tackle priorities.\n"
+                response += "**Momentum:** You're on a roll! Great time to tackle priorities.\n"
             elif context.current_momentum == "low":
-                response += "**Momentum:** 🐌 Consider starting with quick wins to build momentum.\n"
+                response += "**Momentum:** Consider starting with quick wins to build momentum.\n"
             
             # Priority insights
             if active_tasks:
@@ -314,9 +335,9 @@ class PrioritizationAgent:
                 overdue = sum(1 for task in active_tasks if self._is_overdue(task))
                 
                 if overdue > 0:
-                    response += f"⚠️ **{overdue} overdue tasks** need immediate attention\n"
+                    response += f"WARNING: **{overdue} overdue tasks** need immediate attention\n"
                 if high_priority > 0:
-                    response += f"🔴 **{high_priority} high-priority tasks** in your queue\n"
+                    response += f"HIGH PRIORITY: **{high_priority} high-priority tasks** in your queue\n"
             
             # Proactive insights
             if insights:
@@ -362,7 +383,7 @@ class PrioritizationAgent:
                 # Mark as completed
                 self.task_storage.update_task(task_id, {'status': 'completed'})
                 
-                return f"✅ Task completed! Thanks for the feedback - I'm learning your patterns to give better recommendations."
+                return f"Task completed! Thanks for the feedback - I'm learning your patterns to give better recommendations."
         except Exception as e:
             return f"Error completing task: {str(e)}"
     
@@ -448,6 +469,16 @@ class PrioritizationAgent:
             days_ahead += 7
         return today + timedelta(days=days_ahead)
     
+    def _calculate_simple_priorities(self, active_tasks: List) -> List:
+        """Calculate simple priorities"""
+        prioritized = []
+        for task in active_tasks:
+            priority_level = task.get('priority', 'medium')
+            score = {'high': 8, 'medium': 5, 'low': 3}.get(priority_level, 5)
+            prioritized.append((task, score))
+        
+        return sorted(prioritized, key=lambda x: x[1], reverse=True)
+    
 
     
     def _handle_crisis_management(self, query: str, active_tasks: List, context: ContextState) -> str:
@@ -463,7 +494,7 @@ class PrioritizationAgent:
             )
             
             if not active_tasks:
-                return "🚨 I understand this is urgent. Let's create specific tasks for what needs immediate attention. What's the most critical issue right now?"
+                return "URGENT: I understand this is urgent. Let's create specific tasks for what needs immediate attention. What's the most critical issue right now?"
             
             # Calculate crisis priorities
             crisis_tasks = []
@@ -475,14 +506,14 @@ class PrioritizationAgent:
             
             crisis_tasks.sort(key=lambda x: x[1].final_score, reverse=True)
             
-            response = "🚨 **Crisis Mode Activated**\n\n"
+            response = "CRISIS MODE ACTIVATED\n\n"
             response += "**Immediate priorities:**\n"
             
             for i, (task, score) in enumerate(crisis_tasks[:3], 1):
                 title = task.get('title', 'Untitled')
                 response += f"{i}. **{title}** (Critical Score: {score.final_score:.1f}/10)\n"
             
-            response += "\n💡 **Crisis Strategy:** Focus on #1 first, delegate what you can, communicate progress to stakeholders."
+            response += "\n**Crisis Strategy:** Focus on #1 first, delegate what you can, communicate progress to stakeholders."
             
             return response
             

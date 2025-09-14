@@ -14,7 +14,7 @@ start "Simi.ai Frontend" cmd /k "npm start"
 
 echo.
 echo Simi.ai is starting up!
-echo Backend: http://localhost:8000
+echo Backend: http://localhost:8001
 echo Frontend: http://localhost:3000
 echo.
 pause
